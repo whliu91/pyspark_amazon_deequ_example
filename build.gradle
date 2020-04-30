@@ -1,0 +1,81 @@
+buildscript {
+    repositories {
+        maven {
+            url "${gradle.artifactoryUrl}/prd-maven-virtual-remote"
+        }
+
+    }
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.3"
+        classpath "org.ajoberstar:grgit:2+"
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.13.0"
+        classpath "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
+    }
+}
+
+plugins {
+    id 'scala'
+    id "java"
+}
+
+apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: "de.fuerstenau.buildconfig"
+
+group 'au.com.telstra.oan.dataCuration'
+version '0.1'
+def sparkVersion = "2.2.0"
+
+repositories {
+    maven {
+        url "${gradle.artifactoryUrl}/prd-maven-virtual-remote"
+    }
+}
+
+configurations {
+    assembly
+    compile.extendsFrom assembly
+}
+
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
+configurations {
+    libsDirName='../src/main/python'
+    jar.archiveName = 'dqwrapper.jar'
+}
+
+
+dependencies {
+    // Use Scala 2.11 in our library project (equalent to scalaVerios := <version> in build.sbt)
+    compile ('org.scala-lang:scala-library:2.11.8') {
+        force = true
+    }
+    compile ('org.scala-lang:scala-reflect:2.11.8') {
+        force = true
+    }
+    compile ('org.scala-lang:scala-compiler:2.11.8') {
+        force = true
+    }
+
+    // Spark Packages
+
+    provided "org.apache.spark:spark-core_2.11:$sparkVersion"
+    provided "org.apache.spark:spark-sql_2.11:$sparkVersion"
+    provided "org.apache.spark:spark-hive_2.11:$sparkVersion"
+    provided "org.apache.spark:spark-yarn_2.11:$sparkVersion"
+    compile('com.amazon.deequ:deequ:1.0.2') {
+        exclude group: 'org.apache.spark', module: 'spark-sql_2.11'
+    }
+
+
+}
+
+shadowJar {
+    zip64 true
+    archiveName = "dqwrapper.jar"
+    dependencies {
+        include(dependency('com.amazon.deequ:deequ:1.0.2'))
+    }
+}
